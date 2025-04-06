@@ -1,0 +1,44 @@
+@import "~bootstrap/scss/bootstrap";
+
+
+.text-divider{
+  margin: 2em 0;
+  line-height: 0;
+  text-align: center;
+
+  span{
+    background-color: #fff;
+    padding: 1em;
+  }
+
+  :before{
+    content: " ";
+    display: block;
+    border-top: 1px solid #e3e3e3;
+    border-bottom: 1px solid #f7f7f7;
+  }
+}
+
+.progress {
+  background-color: #c5c5c5;
+
+  .progress-bar {
+    overflow: visible;
+  }
+}
+
+
+/* The max width is dependant on the container */
+.popover-max{
+  max-width: 100%; /* Max Width of the popover (depending on the container!) */
+}
+
+.popover-appinfo {
+  max-width: 480px;
+}
+
+@include media-breakpoint-up(md) {
+  .popover-appinfo {
+    max-width: 540px;
+  }
+}

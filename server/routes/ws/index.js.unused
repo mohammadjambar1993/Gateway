@@ -1,0 +1,199 @@
+/*
+
+const fastifyIO = require("fastify-socket.io");
+
+const inquirer = require('inquirer')
+
+
+
+const BleManager = require("../../modules/BleManager")
+
+const bleManager = new BleManager()
+
+const wait = (ms) => new Promise((resolve) => {
+  console.log(`waiting for ${ms/1000}s`)
+  setTimeout(() => resolve(), ms)
+})
+
+module.exports = async function (fastify, opts) {
+  fastify.register(fastifyIO);
+
+  fastify.get('/', async function (request, reply) {
+    return { ws: true }
+    // fastify.io.emit("hello");
+  })
+
+
+  fastify.ready()
+  .then(() => bleManager._state.noble.isReady)
+  .then(() => {
+    console.log('fastify and bleManager ready')
+
+    const bleSnapshot = (socket) => (payload, callback) => callback({
+      data: bleManager.getCurrentDataSnapshot()
+    })
+
+    const bleScanStart = (socket) => (payload, callback) => {
+      bleManager.startScan(payload?.timeout)
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+    const bleScanStop = (socket) => (payload, callback) => {
+      bleManager.stopScan()
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+    const bleConnect = (socket) => ({ peripheralId } = {}, callback) => {
+      if (!peripheralId) {
+        return callback({
+          error: 'peripheralId is missing'
+        })
+      }
+      bleManager.connect(peripheralId)
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+    const bleDisconnect = (socket) => ({ peripheralId } = {}, callback) => {
+      if (!peripheralId) {
+        return callback({
+          error: 'peripheralId is missing'
+        })
+      }
+      bleManager.connect(peripheralId)
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+
+    const bleStart = (socket) => ({ peripheralId, settings } = {}, callback) => {
+      if (!peripheralId) {
+        return callback({
+          error: 'peripheralId is missing'
+        })
+      }
+      bleManager.podStart(peripheralId, settings)
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+    const bleStop = (socket) => ({ peripheralId } = {}, callback) => {
+      if (!peripheralId) {
+        return callback({
+          error: 'peripheralId is missing'
+        })
+      }
+      bleManager.podStop(peripheralId)
+      .then(() => {
+        callback({
+          data: {
+            success: true,
+          }
+        })
+      })
+      .catch((error) => {
+        callback({
+          data: {
+            error,
+          }
+        })
+      })
+    }
+
+    bleManager.on('prompt:encryption:key', (peripherialId) => {
+      fastify.io.broadcast.emit("prompt:encryption:key", {
+        data: {
+          peripherialId,
+        }
+      })
+    })
+
+    bleManager.on('ble:state:update', (newState) => {
+      fastify.io.broadcast.emit("ble:state:update", {
+        data: newState,
+      })
+    })
+
+    // we need to wait for the server to be ready, else `server.io` is undefined
+    fastify.io.on("connect", (socket) => {
+      console.log('on connection called')
+
+      socket.on("ble:snapshot", bleSnapshot(socket));
+      socket.on("ble:scan:start", bleScanStart(socket));
+      socket.on("ble:scan:stop", bleScanStop(socket));
+      socket.on("ble:pod:connect", bleConnect(socket));
+      socket.on("ble:pod:disconnect", bleDisconnect(socket));
+      socket.on("ble:pod:start", bleStart(socket));
+      socket.on("ble:pod:stop", bleStop(socket));
+      
+
+
+    });
+  });
+
+
+}
+
+*/
