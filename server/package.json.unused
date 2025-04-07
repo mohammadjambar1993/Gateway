@@ -3,27 +3,43 @@
 {
   "name": "@variably/server",
   "version": "1.0.0",
-  "description": "This project was bootstrapped with Fastify-CLI.",
+  "description": "PodHub backend powered by Fastify, BLE, and WebSockets.",
   "main": "app.js",
+  "type": "commonjs",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "tap \"test/**/*.test.js\"",
     "start": "fastify start -l info app.js",
-    "dev": "fastify start -p 3001 -w -l info -P app.js"
+    "dev": "fastify start -p 3001 -w -l info -P app.js",
+    "test": "tap \"test/**/*.test.js\"",
+    "lint": "eslint ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "fastify",
+    "ble",
+    "websocket",
+    "iot",
+    "podhub"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
-    "fastify": "^4.0.0",
-    "fastify-plugin": "^3.0.0",
     "@fastify/autoload": "^5.0.0",
     "@fastify/sensible": "^4.1.0",
-    "fastify-cli": "^4.3.0"
+    "@fastify/static": "^6.8.0",
+    "debug": "^4.3.4",
+    "fastify": "^4.24.0",
+    "fastify-plugin": "^3.0.0",
+    "inquirer": "^9.2.16",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
-    "tap": "^16.1.0"
+    "fastify-cli": "^4.3.0",
+    "tap": "^16.1.0",
+    "eslint": "^8.57.0"
   }
 }
