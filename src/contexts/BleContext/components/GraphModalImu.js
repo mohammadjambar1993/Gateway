@@ -1,0 +1,395 @@
+import React, {
+  useState,
+  useEffect,
+  // useMemo,
+  useRef,
+} from "react";
+
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
+
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import 'chartjs-adapter-luxon';
+// import ChartStreaming from 'chartjs-plugin-streaming';
+import { StreamingPlugin, RealTimeScale } from "chartjs-plugin-streaming";
+
+
+import { Line } from 'react-chartjs-2';
+import { flattenSample } from '../utils'
+import FilterDownsample from '../modules/FilterDownSample'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  // ChartStreaming
+  StreamingPlugin,
+  RealTimeScale
+);
+
+// Chart.defaults.set('plugins.streaming', {
+//   duration: 20000
+// });
+
+
+// Constants used for graphs. Time is in milliseconds
+export const TIME_BETWEEN_POINTS = 5;
+export const TIME_PER_GRAPH = 3000;
+export const POINTS_PER_GRAPH = 1600; // changed from 600
+export const ECG_GRAPH_MAX_VALUE = 4200000// 20000; // some max > 2^14
+export const RAW_ECG_GRAPH_MAX_VALUE = 8400000 // 17000000; // some max > 2^23 --Used to be 33000 for 2-byte ECG 
+
+
+export const GraphModalImu = ({ firmwareType, show, onHide, selectedPod, signalOptions, data, IMUSampleCount, IMUPacketInterval }) => {
+
+  const [currentChannel, setCurrentChannel] = useState(1)
+  const [shouldFilter, setShouldFilter] = useState(true)
+  const [dataStream, setDataStream] = useState([])
+
+  // const [graphLabels, setGraphLabels] = useState([])
+
+  const sampling_frequency = (IMUSampleCount * 1000) / IMUPacketInterval
+  const BLOCK_SIZE = IMUSampleCount
+
+  // const filterDownSample = useMemo(() => new FilterDownsample(sampling_frequency, 2, BLOCK_SIZE), [BLOCK_SIZE, sampling_frequency, currentChannel]);
+  const filterDownSample = useRef(null)
+
+  // console.log('GraphModal')
+
+  const reshapeData = (data) => {
+
+    const allData = [];
+    data.forEach((item, idx) => {
+
+      const flatten = flattenSample(item)
+      allData.push(...flatten)
+      //console.log(`ATTN Flattened Sample ${flatten}`)
+    })
+
+    console.log(allData)
+    let slicedx = allData.filter(function(value, index) {
+      return index % 3 === 0;
+    });
+    
+    let slicedy = allData.filter(function(value, index) {
+      return (index - 2) % 3 === 0 && index >= 2;
+    });
+    
+    let slicedz = allData.filter(function(value, index) {
+      return (index - 3) % 3 === 0 && index >= 3;
+    });
+    let reshapeData = [slicedx, slicedy, slicedz]
+    //console.log(reshapeData)
+    return reshapeData
+
+  }
+
+  // const downSizeDeduct = (data) => {
+  //     // Do not downsize if it's an older version of pod
+  //     if(firmwareType === 'prodV1'){
+  //       return data
+  //     }
+
+  //     const newData = new Array(BLOCK_SIZE).fill(0);
+  //     for (let i = 0; i < data.length; i += 1){ 
+  //         newData[i] = Math.floor(data[i] - 8388608)  // Deduct 2^23 from the values to change to signed number
+  //     }
+  //     return newData
+  // }
+
+  // this takes only ONE block
+  // const filterBasedOnBlock = (data, isLive=true) => {
+
+  //   const output = data
+  //   return output
+
+  // }
+
+  // const onRefresh = (chart) => {
+  //   const now = Date.now();
+  //   const newUpdates = dataStream
+  //   console.log('newUpdates', { newUpdates, ds: chart.data.datasets[0] })
+  //   setDataStream([])
+  //   // chart.data.datasets[0].data.push(...newUpdates);
+  //   const vv = {
+  //     x: now,
+  //     y: randomIntFromInterval(-100,100),
+  //   }
+  //   console.log('vv', vv)
+  //   chart.data.datasets[0].data.push(vv);
+  //   // chart.data.datasets.forEach((dataset) => {
+  //   //   console.log('onRefresh dataset')
+  //   //   dataset.data.push(...);
+  //   // });
+  // }
+
+  useEffect(() => {
+    // this runs everytime data value changes. 
+    if (shouldFilter){
+      if(data?.accl?.length){
+
+        const output = []
+        
+        let rawData = reshapeData(data.accl)
+        const tsBit = IMUPacketInterval / IMUSampleCount
+
+        rawData[currentChannel-1].forEach((dataBit, idxx) => {
+          //console.log(`idxx ${idxx}`)
+          //console.log(`dataBit ${dataBit}`)
+          const now = Date.now();
+          //console.log(`now ${now}`)
+          //console.log(`tsBit ${tsBit}`)
+          //console.log(now + (idxx * tsBit),)
+          output.push({
+            x: now + (idxx * tsBit),
+            y: dataBit,
+          })
+          // output.push(dataBit)
+          // ts.push(item.timestamp + (idxx * tsBit))
+        })
+        
+        let newDataStream = [...dataStream, ...output]
+        if (newDataStream.length > POINTS_PER_GRAPH) {
+          newDataStream = newDataStream.slice(-1 * POINTS_PER_GRAPH)
+        }
+  
+        //console.log('newDataStream', newDataStream.length)
+        console.log(newDataStream)
+        setDataStream(newDataStream)
+
+
+
+
+
+       
+        // data.accl[currentChannel-1].forEach((item, idx) => {
+        //   const flatten = flattenSample(item)
+        //   let rawData = reshapeData(flatten)
+
+        //   const tsBit = IMUPacketInterval / IMUSampleCount
+
+        //   rawData.forEach((dataBit, idxx) => {
+        //     const now = Date.now();
+        //     output.push({
+        //       // x: item.timestamp + (idxx * tsBit),
+        //       x: now + (idxx * tsBit),
+        //       y: dataBit,
+        //       // y: randomIntFromInterval(-100, 100)
+        //     })
+        //     // output.push(dataBit)
+        //     // ts.push(item.timestamp + (idxx * tsBit))
+        //   })
+        // })
+
+        // let newDataStream = [...dataStream, ...output]
+        // if (newDataStream.length > POINTS_PER_GRAPH) {
+        //   newDataStream = newDataStream.slice(-1 * POINTS_PER_GRAPH)
+        // }
+  
+        // // console.log('newDataStream', newDataStream.length)
+        // // setGraphLabels(ts)
+        // setDataStream(newDataStream)
+      }
+    }
+    else{
+      if(data?.gyro?.length){
+        const output = []
+        let rawData = reshapeData(data.gyro)
+        const tsBit = IMUPacketInterval / IMUSampleCount
+        rawData[currentChannel-1].forEach((dataBit, idxx) => {
+          const now = Date.now();
+          output.push({
+            // x: item.timestamp + (idxx * tsBit),
+            x: now + (idxx * tsBit),
+            y: dataBit,
+            // y: randomIntFromInterval(-100, 100)
+          })
+          // output.push(dataBit)
+          // ts.push(item.timestamp + (idxx * tsBit))
+        })
+
+        let newDataStream = [...dataStream, ...output]
+        if (newDataStream.length > POINTS_PER_GRAPH) {
+          newDataStream = newDataStream.slice(-1 * POINTS_PER_GRAPH)
+        }
+  
+        // console.log('newDataStream', newDataStream.length)
+        // setGraphLabels(ts)
+        setDataStream(newDataStream)
+      }
+    }
+    // if (data?.ecg?.length) {
+    //   // console.log('graph data has been changed', JSON.stringify(data.ecg[currentChannel-1]))
+    //   // const flatten = []
+    //   const output = []
+    //   // const ts = []
+    //   data.ecg[currentChannel-1].forEach((item, idx) => {
+    //     // console.log('item ts ', item.timestamp)
+    //     // if (data.ecg[currentChannel-1][idx-1]) {
+    //     //   console.log('diff', data.ecg[currentChannel-1][idx-1].timestamp - item.timestamp)
+    //     // }
+    //     const flatten = flattenSample(item)
+    //     let downsizedData = downSizeDeduct(flatten)
+    //     // console.log('shouldFilter', {shouldFilter, downsizedData})
+    //     if (shouldFilter) {
+    //       downsizedData = filterBasedOnBlock(downsizedData);
+    //     }
+
+    //     const tsBit = ECGPacketInterval / ECGSampleCount
+    //     downsizedData.forEach((dataBit, idxx) => {
+    //       const now = Date.now();
+    //       output.push({
+    //         // x: item.timestamp + (idxx * tsBit),
+    //         x: now + (idxx * tsBit),
+    //         y: dataBit,
+    //         // y: randomIntFromInterval(-100, 100)
+    //       })
+    //       // output.push(dataBit)
+    //       // ts.push(item.timestamp + (idxx * tsBit))
+    //     })
+    //   })
+
+    //   // console.log('output', output.length)
+
+    //   let newDataStream = [...dataStream, ...output]
+    //   if (newDataStream.length > POINTS_PER_GRAPH) {
+    //     newDataStream = newDataStream.slice(-1 * POINTS_PER_GRAPH)
+    //   }
+
+    //   // console.log('newDataStream', newDataStream.length)
+    //   // setGraphLabels(ts)
+    //   setDataStream(newDataStream)
+
+    //   // if (newDataStream.length !== graphLabels.length) {
+    //   //   const newGraphLabels = new Array(newDataStream.length)
+    //   //   for (let i = 0; i < newDataStream.length; i++) {
+    //   //     newGraphLabels[i] = i
+    //   //   }
+    //   //   setGraphLabels(newGraphLabels)
+    //   // }
+    // }
+  }, [data]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setDataStream([])
+  }, [currentChannel, shouldFilter])
+
+  useEffect(() => {
+    if (!show) {
+      setDataStream([])
+    } else {
+      // 
+    }
+  }, [show])
+
+  useEffect(() => {
+    // console.log('filterDownSample.current', {BLOCK_SIZE, sampling_frequency})
+    filterDownSample.current = new FilterDownsample(sampling_frequency, 2, BLOCK_SIZE)
+  }, [show, BLOCK_SIZE, sampling_frequency])//, currentChannel])
+
+  return (<Modal show={show} onHide={onHide}>
+    <Modal.Header closeButton>
+      <Modal.Title>IMU Pod Graph {selectedPod}</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+
+      <ButtonToolbar className="align-items-center" aria-label="Graph options">
+        <ButtonGroup className="me-2" aria-label="Channel options">
+          {Object.values(signalOptions).map((opt) => (
+            <Button
+              key={opt.id}
+              onClick={()=> {
+                setCurrentChannel(opt.id)
+              }}
+              active={opt.id === currentChannel}
+            >
+              {opt.value}
+            </Button>
+          ))}
+        </ButtonGroup>
+        
+        {/*<ButtonGroup aria-label="Third group">
+          <Button>8</Button>
+        </ButtonGroup>*/}
+
+        <Form.Check 
+          type="switch"
+          id="filter-switch"
+          label={shouldFilter ? "Accelerometer" : "Gyrometer" }
+          checked={shouldFilter}
+          onChange={(e) => setShouldFilter(!shouldFilter)}
+        />
+      </ButtonToolbar>
+
+      <Line
+        options={{
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: "Value",
+              },
+              grid: {
+                display: false,
+              },
+            },
+            x: {
+              title: {
+                display: false,
+              },
+              ticks: {
+                display: false, //this will remove only the label
+              },
+              grid: {
+                display: false,
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              enabled: false,
+            },
+          },
+        }}
+        data={{
+          labels: dataStream.map((d) => d.x),
+          datasets: [{
+            borderColor: 'blue',
+            backgroundColor: 'blue',
+            label: '',
+            data: dataStream,
+            pointRadius: 0,
+            showLine: true,
+          }]
+        }}
+      />
+    </Modal.Body>
+    <Modal.Footer>
+      <Button variant="secondary" onClick={onHide}>
+        Close
+      </Button>
+    </Modal.Footer>
+  </Modal>)
+}
+
+
