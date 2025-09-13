@@ -138,7 +138,7 @@ _(this is specific to an ubuntu server installation, other operating systems hav
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/RNDMyant/research-gateway-podhub.git
+   git clone https://github.com/mohammadjambar1993/research-gateway-podhub.git
    cd pod-hub/
    ```
 2. Install NPM packages
