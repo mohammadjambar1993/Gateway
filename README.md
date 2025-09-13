@@ -138,7 +138,7 @@ _(this is specific to an ubuntu server installation, other operating systems hav
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/mohammadjambar1993/research-gateway-podhub.git
+   git clone https://github.com/mohammadjambar1993/Gateway.git
    cd pod-hub/
    ```
 2. Install NPM packages
@@ -314,7 +314,7 @@ This feature has been added and can be found inside `./server/modules/BleManager
 
 ## Contact
 
-Project Link: [https://github.com/RNDMyant/research-gateway-podhub.git](https://github.com/RNDMyant/research-gateway-podhub.git)
+Project Link: [https://github.com/mohammadjambar1993/Gateway.git](https://github.com/mohammadjambar1993/Gateway.git)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
